@@ -1,0 +1,45 @@
+# Please refer https://aka.ms/HTTPSinContainer on how to setup an https developer certificate for your ASP .NET Core service.
+
+# Debugging with docker-compose doesn't work as the image used to run the app it Alpine. It works if you use the old dockerfile
+# from commit 977c624
+# However, debugging works when project is ran with Project Tye (tye run command)
+version: '3.4'
+services:
+  webapifirst:
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_URLS=http://+:5004
+    image: webapifirst
+    container_name: webapifirst
+    build:
+      context: .
+      dockerfile: WebApiFirst/Dockerfile
+    ports:
+      - 5004:5004
+      - 3500:3500
+    networks:
+      - hello-dapr
+  webapifirst-dapr:
+    image: "daprio/daprd:edge"
+    command:
+      [
+        "./daprd",
+        "-app-id",
+        "webapifirst",
+        "-app-port",
+        "5004",
+        "-dapr-http-port",
+        "3500",
+        "-components-path",
+        "./components",
+        "-config",
+        "./components/config.yaml"
+      ]
+    volumes:
+      - "./components:/components" # Mount our components folder for the runtime to use
+
+    depends_on:
+      - webapifirst
+    network_mode: "service:webapifirst" # Attach the webapifirst-dapr service to the webapifirst network namespace
+networks:
+  hello-dapr: null

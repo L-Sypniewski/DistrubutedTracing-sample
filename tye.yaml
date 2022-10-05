@@ -1,0 +1,72 @@
+# tye application configuration file
+# read all about it at https://github.com/dotnet/tye
+#
+# when you've given us a try, we'd love to know what you think:
+#    https://aka.ms/AA7q20u
+#
+# https://github.com/dotnet/tye/blob/main/docs/reference/schema.md
+#  https://markheath.net/post/sql-container-with-tye
+name: daprtests
+dashboardPort: 8003
+extensions:
+  - name: dapr
+    components-path: "./components"
+    config: config
+    log-level: "debug"
+    services:
+      webapifirstraz:
+        http-port: 5006
+      webapiseconddwa:
+        http-port: 5008
+services:
+  - name: webapifirstraz
+    project: WebApiFirst/WebApiFirst.csproj
+    bindings:
+      - port: 5005
+  - name: webapiseconddwa
+    project: WebApiSecond/WebApiSecond.csproj
+    bindings:
+      - port: 5007
+  - name: sqlserverBlablaDaprName
+    image: mcr.microsoft.com/mssql/server:2019-latest
+    env:
+      - name: SA_PASSWORD
+        value: "V0teM!cr0s3rv!ce"
+      - name: ACCEPT_EULA
+        value: "Y"
+    volumes:
+      - name: webapi-storage
+        target: /var/opt/mssql
+    bindings:
+      - name: http-sqlserver # think this is the name needed for the port
+        port: 1433
+      - name: webApiSecondDbOtherName
+        connectionString: Server=${host};User Id=sa;Database=WebApiSecondDbConnStringName;Password=${env:SA_PASSWORD};
+    tags:
+      - sqlserver
+  - name: zipkin
+    image: openzipkin/zipkin:latest
+    bindings:
+      - name: http-zipkin
+        port: 9411
+  - name: opentelemetrycollector #https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/examples/demo/docker-compose.yaml?utm_source=pocket_mylist
+    image: otel/opentelemetry-collector-contrib-dev:latest
+    args: "--config=/etc/otel-collector-config.yaml"
+    volumes:
+      - source: ./otel-collector-config.yaml
+        target: /etc/otel-collector-config.yaml
+    bindings:
+      - name: pprof
+        port: 1888
+      - name: health-check
+        port: 13133
+      - name: otlp-grpc-receiver
+        port: 4317
+      - name: zpages
+        port: 55679
+      - name: zipkin-receiver # dapr sends zipkin data here and OpenTelemetryCollector then passes the data to actual zipkin
+        port: 9412
+    liveness:
+      http:
+        path: /healthy
+        port: 13133

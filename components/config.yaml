@@ -1,0 +1,9 @@
+apiVersion: dapr.io/v1alpha1
+kind: Configuration
+metadata:
+  name: daprConfigTests
+spec:
+  tracing:
+    samplingRate: "1"
+    zipkin:
+      endpointAddress: http://localhost:9412/api/v2/spans # This is to send data to OpenTelemetryCollector which can accept zipkin protocol. Then OpenTelemetryCollector sends the data ti zipking (and other places e.g. AppInsights)

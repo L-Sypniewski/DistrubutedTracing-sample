@@ -1,0 +1,42 @@
+receivers:
+  otlp: # otlp is used by .net project
+    protocols:
+      grpc:
+  zipkin: # dapr sends zipkin data here and OpenTelemetryCollector then passes the data to actual zipkin. Currently there's no way to send telemetry from dapr to otlp receiver
+    endpoint: 0.0.0.0:9412
+extensions:
+  health_check:
+    port: 13133
+    path: "/healthy"
+  pprof:
+    endpoint: :1888
+  zpages: # https://github.com/open-telemetry/opentelemetry-collector/blob/main/extension/zpagesextension/README.md
+    endpoint: :55679
+exporters:
+  zipkin:
+    endpoint: http://zipkin:9411/api/v2/spans # Points to a local Zipkin docker container defined in tye.yaml
+  logging: # Logging exporter prints to OTEL container collector's console
+    loglevel: debug
+  azuremonitor:
+    endpoint: "https://dc.services.visualstudio.com/v2/track"
+    instrumentation_key: "<INSERT APP INSIGHTS KEY HERE"
+    # maxbatchsize is the maximum number of items that can be
+    # queued before calling to the configured endpoint
+    maxbatchsize: 100
+    # maxbatchinterval is the maximum time to wait before calling
+    # the configured endpoint.
+    maxbatchinterval: 1s
+service:
+  extensions: [pprof, zpages, health_check]
+  pipelines:
+    traces:
+      receivers: [otlp, zipkin] # zipkin receiver is used as currently there's no way to send telemetry from dapr to otlp receiver
+      exporters: [azuremonitor, zipkin]
+    # metrics: TODO: grafana?
+    #   receivers: [otlp]
+    #   exporters: [azuremonitor, logging]
+    logs:
+      receivers: [otlp]
+      exporters: [azuremonitor, logging]
+# add filtering GET /v1.0/metadata calls
+# https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor

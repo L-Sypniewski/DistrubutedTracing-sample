@@ -1,0 +1,89 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "build",
+                "${workspaceFolder}/WebApiFirst/WebApiFirst.csproj",
+                "/property:GenerateFullPaths=true",
+                "/consoleloggerparameters:NoSummary"
+            ],
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "label": "watch",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "watch",
+                "run",
+                "--project",
+                "${workspaceFolder}/WebApiFirst/WebApiFirst.csproj"
+            ],
+            "problemMatcher": "$msCompile"
+        },
+        {
+            "type": "docker-build",
+            "label": "docker-build: debug",
+            "dependsOn": [
+                "build"
+            ],
+            "dockerBuild": {
+                "tag": "daprcron:dev",
+                "target": "base",
+                "dockerfile": "${workspaceFolder}/WebApiFirst/Dockerfile",
+                "context": "${workspaceFolder}",
+                "pull": true
+            },
+            "netCore": {
+                "appProject": "${workspaceFolder}/WebApiFirst/WebApiFirst.csproj"
+            }
+        },
+        {
+            "type": "docker-compose",
+            "label": "docker-compose up: debug",
+            "dockerCompose": {
+                "up": {
+                    "detached": false,
+                    "build": true,
+                },
+                "files": [
+                    "${workspaceFolder}/docker-compose.yml",
+                    "${workspaceFolder}/docker-compose.debug.yml"
+                ]
+            }
+        },
+        {
+            "type": "docker-compose",
+            "label": "docker-compose down: debug",
+            "dockerCompose": {
+                "down": {
+                    "detached": false,
+                },
+                "files": [
+                    "${workspaceFolder}/docker-compose.yml",
+                    "${workspaceFolder}/docker-compose.debug.yml"
+                ]
+            }
+        },
+        {
+            "applicationName": "daprtests",
+            "label": "tye run",
+            "type": "tye-run",
+            "debug": "*",
+            "path": "tye.yaml",
+            "watch": true
+        },
+        {
+            "applicationName": "daprtests",
+            "label": "tye run SQL Server",
+            "type": "tye-run",
+            "tags": "sqlserver",
+            "path": "tye.yaml",
+            "watch": true
+        }
+    ]
+}
